@@ -42,7 +42,7 @@ your vCards stay on your server.
 ## Quick start
 
 ```bash
-git clone https://github.com/<you>/Visitka.git visitka
+git clone https://github.com/tanweber/Visitka.git visitka
 cd visitka
 docker compose up -d --build
 ```
