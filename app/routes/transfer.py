@@ -1,6 +1,7 @@
 """Экспорт и импорт контактов в формате vCard (.vcf)."""
 from __future__ import annotations
 
+import contextvars
 import datetime as dt
 import logging
 import secrets
@@ -12,6 +13,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 import bday
+from i18n import _, get_lang
 import vcard as vcard_module
 from dav_client import DavClient, DavError, DavUnavailable, href_for
 from routes.contacts import UID_RE, _href
@@ -62,7 +64,12 @@ def export_one(uid: str, current: SessionUser = Depends(current_session)):
     return response
 
 
-CLEAR_WORD = "УДАЛИТЬ"
+# слово-подтверждение очистки; принимаем любое из двух, показываем — на языке интерфейса
+CLEAR_WORDS = {"ru": "УДАЛИТЬ", "en": "DELETE"}
+
+
+def _clear_word() -> str:
+    return CLEAR_WORDS.get(get_lang(), CLEAR_WORDS["ru"])
 
 
 @router.get("/clear", response_class=HTMLResponse)
@@ -70,7 +77,7 @@ def clear_form(request: Request, current: SessionUser = Depends(current_session)
     from main import templates
     count = len(DavClient(current.user.username).list_hrefs())
     return templates.TemplateResponse(request, "clear.html", {
-        "user": current.user, "csrf": current.csrf, "count": count, "word": CLEAR_WORD,
+        "user": current.user, "csrf": current.csrf, "count": count, "word": _clear_word(),
         "error": None,
     })
 
@@ -85,10 +92,10 @@ def clear_submit(
     from main import templates
     require_csrf(csrf, current)
     client = DavClient(current.user.username)
-    if confirm.strip().upper() != CLEAR_WORD:
+    if confirm.strip().upper() not in CLEAR_WORDS.values():
         return templates.TemplateResponse(request, "clear.html", {
             "user": current.user, "csrf": current.csrf, "count": len(client.list_hrefs()),
-            "word": CLEAR_WORD, "error": f"Введите слово {CLEAR_WORD}, чтобы подтвердить.",
+            "word": _clear_word(), "error": _("Введите слово {word}, чтобы подтвердить.", word=_clear_word()),
         }, status_code=400)
     # удаляем карточки по одной, а не всю коллекцию: телефоны увидят обычные
     # удаления при синхронизации, а адрес адресной книги не изменится
@@ -117,12 +124,12 @@ def _read_cards(files: list[UploadFile], result: dict) -> list[str]:
     for upload in files:
         data = upload.file.read(budget + 1)
         if len(data) > budget:
-            result["errors"].append("Файлы больше 20 МБ — разделите импорт на части.")
+            result["errors"].append(_("Файлы больше 20 МБ — разделите импорт на части."))
             break
         budget -= len(data)
         cards.extend(vcard_module.split_cards(_decode(data)))
     if len(cards) > MAX_CARDS:
-        result["errors"].append(f"За раз — не больше {MAX_CARDS} контактов; импортированы первые {MAX_CARDS}.")
+        result["errors"].append(_("За раз — не больше {n} контактов; импортированы первые {n}.", n=MAX_CARDS))
         cards = cards[:MAX_CARDS]
     result["total"] = len(cards)
     return cards
@@ -157,7 +164,7 @@ def _import_cards(client: DavClient, cards: list[str], replace: bool, result: di
         try:
             name = vcard_module.parse(card)["fn"] or uid
         except Exception:
-            _error(result, f"Не удалось разобрать карточку {uid[:40]}")
+            _error(result, _("Не удалось разобрать карточку {uid}", uid=uid[:40]))
             continue
         # имя файла — по UID, если он годится для пути; иначе новый
         fname = uid if UID_RE.match(uid) and not uid.startswith(".") else vcard_module.new_uid()
@@ -182,7 +189,7 @@ def _run_job(job: dict, username: str, cards: list[str], replace: bool) -> None:
         _import_cards(DavClient(username), cards, replace, job["result"])
     except Exception:
         log.exception("импорт %s прерван", job["id"])
-        job["result"]["errors"].append("Импорт прерван из-за ошибки сервера, часть контактов могла не сохраниться.")
+        job["result"]["errors"].append(_("Импорт прерван из-за ошибки сервера, часть контактов могла не сохраниться."))
     finally:
         job["finished"] = True
 
@@ -244,8 +251,9 @@ def import_submit(
                "finished": False, "created": time.time()}
         with _jobs_lock:
             _jobs[job["id"]] = job
-        threading.Thread(target=_run_job, args=(job, current.user.username, cards, replace),
-                         daemon=True).start()
+        # copy_context: фоновый поток пишет ошибки на языке того, кто запустил импорт
+        threading.Thread(target=contextvars.copy_context().run,
+                         args=(_run_job, job, current.user.username, cards, replace), daemon=True).start()
         return JSONResponse({"job": job["id"], "total": len(cards)})
 
     # без JS — по-старому, синхронно

@@ -1,38 +1,38 @@
 {% extends "base.html" %}
-{% block title %}Очистить адресную книгу — Visitka{% endblock %}
+{% block title %}{{ _("Очистить адресную книгу") }} — Visitka{% endblock %}
 {% block content %}
-<a class="back" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>Контакты</a>
-<div class="page-head"><h1>Очистить адресную книгу</h1></div>
+<a class="back" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>{{ _("Контакты") }}</a>
+<div class="page-head"><h1>{{ _("Очистить адресную книгу") }}</h1></div>
 
 {% if error %}<p class="flash error">{{ error }}</p>{% endif %}
 
 {% if count %}
 <section class="card danger-zone">
-  <p><strong>Будут удалены все контакты: {{ count }}.</strong></p>
+  <p><strong>{{ _("Будут удалены все контакты: {n}.", n=count) }}</strong></p>
   <ul class="hint">
-    <li>Удаление нельзя отменить.</li>
-    <li>При следующей синхронизации контакты пропадут и со всех подключённых телефонов.</li>
-    <li>Адресная книга и пароли устройств останутся — телефоны не нужно настраивать заново.</li>
+    <li>{{ _("Удаление нельзя отменить.") }}</li>
+    <li>{{ _("При следующей синхронизации контакты пропадут и со всех подключённых телефонов.") }}</li>
+    <li>{{ _("Адресная книга и пароли устройств останутся — телефоны не нужно настраивать заново.") }}</li>
   </ul>
 </section>
 
 <section class="card">
-  <p><strong>Сначала сохраните копию</strong></p>
-  <p class="hint">Из файла всё можно будет вернуть через «Импорт».</p>
-  <p><a class="button ghost" href="/export.vcf" download data-download="Готовлю файл со всеми контактами…">Скачать все контакты (.vcf)</a></p>
+  <p><strong>{{ _("Сначала сохраните копию") }}</strong></p>
+  <p class="hint">{{ _("Из файла всё можно будет вернуть через «Импорт».") }}</p>
+  <p><a class="button ghost" href="/export.vcf" download data-download="{{ _('Готовлю файл со всеми контактами…') }}">{{ _("Скачать все контакты (.vcf)") }}</a></p>
 </section>
 
-<form method="post" action="/clear" class="card" data-busy="Удаляю контакты…">
+<form method="post" action="/clear" class="card" data-busy="{{ _('Удаляю контакты…') }}">
   <input type="hidden" name="csrf" value="{{ csrf }}">
-  <label for="confirm-word">Чтобы подтвердить, введите <b>{{ word }}</b></label>
+  <label for="confirm-word">{{ _("Чтобы подтвердить, введите") }} <b>{{ word }}</b></label>
   <input id="confirm-word" class="confirm-input" name="confirm" autocomplete="off" autocapitalize="characters"
          spellcheck="false" placeholder="{{ word }}" data-confirm-word="{{ word }}" required>
-  <button type="submit" class="button danger wide">Удалить все контакты</button>
+  <button type="submit" class="button danger wide">{{ _("Удалить все контакты") }}</button>
 </form>
 {% else %}
 <section class="card empty-state">
-  <p>Адресная книга уже пуста.</p>
-  <p><a class="button" href="/">К списку</a></p>
+  <p>{{ _("Адресная книга уже пуста.") }}</p>
+  <p><a class="button" href="/">{{ _("К списку") }}</a></p>
 </section>
 {% endif %}
 {% endblock %}

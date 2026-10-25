@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Ошибка — Visitka{% endblock %}
+{% block title %}{{ _("Ошибка") }} — Visitka{% endblock %}
 {% block content %}
 <section class="auth">
-  <h1>Не получилось</h1>
+  <h1>{{ _("Не получилось") }}</h1>
   <p class="flash error">{{ message }}</p>
-  <p><a class="button" href="/">Вернуться к списку</a></p>
+  <p><a class="button" href="/">{{ _("Вернуться к списку") }}</a></p>
 </section>
 {% endblock %}

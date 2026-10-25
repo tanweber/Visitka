@@ -9,16 +9,23 @@ from __future__ import annotations
 import datetime as dt
 import re
 
+from i18n import _, get_lang
+
 # так iOS помечает дату без года
 NO_YEAR = 1604
 MONTHS = ("января", "февраля", "марта", "апреля", "мая", "июня",
           "июля", "августа", "сентября", "октября", "ноября", "декабря")
+MONTHS_EN = ("January", "February", "March", "April", "May", "June",
+             "July", "August", "September", "October", "November", "December")
 _MONTH_STEMS = ("янв", "фев", "мар", "апр", "ма", "июн", "июл", "авг", "сен", "окт", "ноя", "дек")
+_MONTH_STEMS_EN = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 _ISO = re.compile(r"^(\d{4})-?(\d{2})-?(\d{2})(?:T[\d:.]*(?:Z|[+-]\d{2}:?\d{2})?)?$", re.IGNORECASE)
 _NO_YEAR = re.compile(r"^--(\d{2})-?(\d{2})$")
 _DOTTED = re.compile(r"^(\d{1,2})[./, -](\d{1,2})(?:[./, -](\d{2}|\d{4}))?$")
-_WORDS = re.compile(r"^(\d{1,2})\s+([а-яё]+)\.?(?:\s+(\d{4}))?(?:\s*г\.?)?$", re.IGNORECASE)
+_WORDS = re.compile(r"^(\d{1,2})\s+([а-яёa-z]+)\.?,?(?:\s+(\d{4}))?(?:\s*г\.?)?$", re.IGNORECASE)
+# July 1, 1975 / July 1
+_WORDS_EN = re.compile(r"^([a-z]+)\.?\s+(\d{1,2}),?(?:\s+(\d{4}))?$", re.IGNORECASE)
 _LINE = re.compile(r"^((?:[A-Za-z0-9-]+\.)?BDAY)((?:;[^:\r\n]*)?):(.*(?:\r?\n[ \t].*)*)",
                    re.IGNORECASE | re.MULTILINE)
 _VERSION = re.compile(r"^VERSION:\s*(\S+)", re.IGNORECASE | re.MULTILINE)
@@ -66,14 +73,25 @@ def parse_input(value: str) -> Parts:
             year += 2000 if year <= dt.date.today().year % 100 else 1900
         parts = _checked(year or None, int(m[2]), int(m[1]))
     elif m := _WORDS.match(value):
-        word = m[2].lower()
-        month = next((i for i, stem in enumerate(_MONTH_STEMS, 1) if word.startswith(stem)), None)
+        month = _month(m[2])
         parts = month and _checked(int(m[3]) if m[3] else None, month, int(m[1]))
+    elif m := _WORDS_EN.match(value):
+        month = _month(m[1])
+        parts = month and _checked(int(m[3]) if m[3] else None, month, int(m[2]))
     if not parts:
-        raise BdayError("Дата рождения: не понял дату. Пример: 01.07.1975 или 01.07 без года.")
+        raise BdayError(_("Дата рождения: не понял дату. Пример: 01.07.1975 или 01.07 без года."))
     if parts[0] and not 1800 <= parts[0] <= dt.date.today().year:
-        raise BdayError("Дата рождения: проверьте год.")
+        raise BdayError(_("Дата рождения: проверьте год."))
     return parts
+
+
+def _month(word: str) -> int | None:
+    word = word.lower()
+    for stems in (_MONTH_STEMS, _MONTH_STEMS_EN):
+        found = next((i for i, stem in enumerate(stems, 1) if word.startswith(stem)), None)
+        if found:
+            return found
+    return None
 
 
 def to_vcard(parts: Parts, version: str = "3.0") -> tuple[str, dict[str, str]]:
@@ -87,14 +105,20 @@ def to_vcard(parts: Parts, version: str = "3.0") -> tuple[str, dict[str, str]]:
 
 
 def human(parts: Parts) -> str:
-    """01 июля 1975 (или 01 июля, если год неизвестен)."""
+    """01 июля 1975 / 1 July 1975 (без года — 01 июля / 1 July)."""
     year, month, day = parts
-    text = f"{day:02d} {MONTHS[month - 1]}"
+    if get_lang() == "en":
+        text = f"{day} {MONTHS_EN[month - 1]}"
+    else:
+        text = f"{day:02d} {MONTHS[month - 1]}"
     return f"{text} {year}" if year else text
 
 
 def form_value(parts: Parts) -> str:
+    """Значение для поля формы: 01.07.1975 / 01.07; в английском — ISO 1975-07-01 / --07-01."""
     year, month, day = parts
+    if get_lang() == "en":
+        return f"{year:04d}-{month:02d}-{day:02d}" if year else f"--{month:02d}-{day:02d}"
     return f"{day:02d}.{month:02d}.{year}" if year else f"{day:02d}.{month:02d}"
 
 

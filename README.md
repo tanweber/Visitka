@@ -2,6 +2,10 @@
 
 **English** · [Русский](README.ru.md)
 
+[![CI](https://github.com/tanweber/Visitka/actions/workflows/docker.yml/badge.svg)](https://github.com/tanweber/Visitka/actions/workflows/docker.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Docker images: amd64, arm64](https://img.shields.io/badge/docker-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)
+
 **Visitka** (Russian for “business card”, a nod to vCard) is a self-hosted, private address book for families and small teams. Phones sync contacts
 over **CardDAV** (DAVx5 on Android, built-in Contacts on iOS/macOS), and a fast,
 minimal **web interface** lets you browse, search and edit them from any browser.
@@ -10,8 +14,6 @@ Everything runs with a single `docker compose up -d`.
 Built on [Radicale](https://radicale.org/) (the CardDAV server) plus a small
 FastAPI app for users, device passwords and the web UI. No cloud, no tracking,
 your vCards stay on your server.
-
-> The web interface is in Russian. Contributions with translations are welcome.
 
 <p align="center">
   <img src="docs/screenshots/list-light.png" alt="Contact list, light theme" width="260">
@@ -34,6 +36,7 @@ your vCards stay on your server.
 - **Contact photos** with crop and zoom; stored inside the vCard (vCard 3.0 and 4.0).
 - **Birthdays** in one consistent format, shown as “12 April 1990”, with or without the year.
 - **Import / export** `.vcf` with progress, duplicate detection by UID, skip or replace.
+- **English and Russian** interface, picked from the browser language or switched in the menu.
 - **Themes**: system, light, dark, Nord, Forest.
 - **Mobile-first** design in the spirit of Apple and claude.ai, works great on phones.
 - **Secure by default**: argon2 passwords, CSRF protection, strict CSP, read-only containers,
@@ -41,10 +44,13 @@ your vCards stay on your server.
 
 ## Quick start
 
+Ready-made images for amd64 and arm64 (Raspberry Pi) are published to GitHub Container Registry,
+so you only need one file:
+
 ```bash
-git clone https://github.com/tanweber/Visitka.git visitka
-cd visitka
-docker compose up -d --build
+mkdir visitka && cd visitka
+curl -fsSLO https://raw.githubusercontent.com/tanweber/Visitka/main/compose.yaml
+docker compose up -d
 ```
 
 Open `http://<server>:8080` and sign in with **admin / admin**. The app will ask you
@@ -67,10 +73,13 @@ Copy `.env.example` to `.env` and change what you need. All settings are optiona
 | `SECRET_KEY` | generated | Session signing key; generated once and kept in the `app_data` volume |
 | `CADDY_HTTP_PORT` | `8080` | Host port of the stack |
 | `COOKIE_SECURE` | `auto` | Secure cookies; `auto` turns them on when `PUBLIC_URL` is `https://` |
+| `DEFAULT_LANG` | `auto` | Interface language: `auto` (from the browser), `en` or `ru`; users can switch in the menu |
+| `ADDRESSBOOK_NAME` | `Contacts` / `Контакты` | Name of the address book on phones, set when a user is created |
 | `TZ` | `Europe/Moscow` | Time zone for the UI and logs (times are stored in UTC) |
 | `CONTACTS_SUBNET` | `10.77.0.0/24` | Internal Docker subnet; change if it overlaps with yours |
+| `VISITKA_VERSION` | `latest` | Image tag: `latest`, a release like `1.0`, or `edge` |
 
-Apply changes with `docker compose up -d`.
+Apply changes with `docker compose up -d`. Update with `docker compose pull && docker compose up -d`.
 
 ## Connecting phones
 
@@ -100,9 +109,19 @@ phone / browser ──TLS──▶ your reverse proxy ──▶ caddy :8080
                                                  └─ /*  ───────────────────────▶ app  (web UI, FastAPI)
 ```
 
-- **caddy**: routing, `forward_auth` for CardDAV, security headers; strips any client `X-Remote-User`.
+- **caddy**: routing, `forward_auth` for CardDAV, security headers; strips any client `X-Remote-User`
+  (`caddy:2.11.7` with the bundled Caddyfile).
 - **radicale**: CardDAV storage (`python:3.12-slim` + `radicale==3.8.3`), not reachable from outside.
 - **app**: FastAPI + Jinja2 + SQLite: users, device passwords, web UI.
+
+## Building from source
+
+```bash
+git clone https://github.com/tanweber/Visitka.git visitka && cd visitka
+docker compose -f compose.yaml -f compose.build.yaml up -d --build
+```
+
+To keep building locally, put `COMPOSE_FILE=compose.yaml:compose.build.yaml` into `.env`.
 
 ## Backup and maintenance
 

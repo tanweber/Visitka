@@ -5,6 +5,7 @@ import math
 from io import BytesIO
 
 from PIL import Image, ImageOps, UnidentifiedImageError
+from i18n import _
 
 # защита от «бомб» распаковки: больше 40 Мп не открываем
 Image.MAX_IMAGE_PIXELS = 40_000_000
@@ -32,13 +33,13 @@ def parse_crop(value: str) -> tuple[float, float, float] | None:
 def normalize(data: bytes, crop: tuple[float, float, float] | None = None) -> bytes:
     """Поворот по EXIF, обрезка в квадрат (выбранная или по центру), JPEG без метаданных."""
     if not data:
-        raise PhotoError("пустой файл")
+        raise PhotoError(_("пустой файл"))
     if len(data) > MAX_UPLOAD:
-        raise PhotoError("файл больше 15 МБ")
+        raise PhotoError(_("файл больше 15 МБ"))
     try:
         with Image.open(BytesIO(data)) as im:
             if im.format not in {"JPEG", "PNG", "WEBP", "GIF"}:
-                raise PhotoError("нужен JPEG, PNG, WebP или GIF")
+                raise PhotoError(_("нужен JPEG, PNG, WebP или GIF"))
             # JPEG можно декодировать сразу в уменьшенном виде — в разы меньше памяти
             # при сильном увеличении нужно больше пикселей исходника
             need = math.ceil(SIZE * 2 / crop[2]) if crop else SIZE * 2
@@ -61,4 +62,4 @@ def normalize(data: bytes, crop: tuple[float, float, float] | None = None) -> by
             im.save(out, "JPEG", quality=85, optimize=True, progressive=True)
             return out.getvalue()
     except (UnidentifiedImageError, Image.DecompressionBombError, OSError) as exc:
-        raise PhotoError("не удалось прочитать изображение") from exc
+        raise PhotoError(_("не удалось прочитать изображение")) from exc

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 import security
 import config
 from db import User, get_session
+from i18n import _
 
 
 PASSWORD_CHANGE_PATHS = {"/account/password", "/logout"}
@@ -34,9 +35,9 @@ def current_session(request: Request, session: Session = Depends(get_session)) -
 
 def require_csrf(token: str, current: SessionUser) -> None:
     if not token or not current.csrf or token != current.csrf:
-        raise HTTPException(status_code=400, detail="CSRF-токен неверен, обновите страницу")
+        raise HTTPException(status_code=400, detail=_("CSRF-токен неверен, обновите страницу"))
 
 
 def require_admin(current: SessionUser) -> None:
     if not current.user.is_admin:
-        raise HTTPException(status_code=403, detail="Только для администратора")
+        raise HTTPException(status_code=403, detail=_("Только для администратора"))

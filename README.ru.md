@@ -2,6 +2,10 @@
 
 [English](README.md) · **Русский**
 
+[![CI](https://github.com/tanweber/Visitka/actions/workflows/docker.yml/badge.svg)](https://github.com/tanweber/Visitka/actions/workflows/docker.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Docker-образы: amd64, arm64](https://img.shields.io/badge/docker-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)
+
 **Visitka** («визитка» — как vCard) — самостоятельно размещаемая (self-hosted) адресная книга для семьи или небольшой команды.
 Телефоны синхронизируют контакты по **CardDAV** (DAVx5 на Android, встроенные «Контакты»
 на iPhone и Mac), а быстрый лаконичный **веб-интерфейс** позволяет искать и править их
@@ -32,6 +36,7 @@
 - **Фото контактов** с обрезкой и масштабом; хранятся в самой vCard (3.0 и 4.0).
 - **Дни рождения** в едином формате, показываются как «12 апреля 1990», можно без года.
 - **Импорт и экспорт** `.vcf` с прогрессом; совпадения по UID — пропустить или заменить, без дублей.
+- **Русский и английский** интерфейс: выбирается по языку браузера или в меню.
 - **Темы**: как в системе, светлая, тёмная, Nord, Forest.
 - **Сделано для телефона**: лёгкий чистый дизайн в духе Apple и claude.ai.
 - **Безопасность по умолчанию**: argon2, защита от CSRF, строгий CSP, контейнеры только
@@ -39,10 +44,13 @@
 
 ## Быстрый старт
 
+Готовые образы для amd64 и arm64 (Raspberry Pi) лежат в GitHub Container Registry,
+поэтому нужен всего один файл:
+
 ```bash
-git clone https://github.com/tanweber/Visitka.git visitka
-cd visitka
-docker compose up -d --build
+mkdir visitka && cd visitka
+curl -fsSLO https://raw.githubusercontent.com/tanweber/Visitka/main/compose.yaml
+docker compose up -d
 ```
 
 Откройте `http://<сервер>:8080` и войдите как **admin / admin**. Приложение сразу попросит
@@ -65,10 +73,13 @@ docker compose up -d --build
 | `SECRET_KEY` | генерируется | Ключ подписи сессий; создаётся один раз и хранится в томе `app_data` |
 | `CADDY_HTTP_PORT` | `8080` | Порт на хосте |
 | `COOKIE_SECURE` | `auto` | Secure-cookie; `auto` включает их, если `PUBLIC_URL` начинается с `https://` |
+| `DEFAULT_LANG` | `auto` | Язык интерфейса: `auto` (по браузеру), `ru` или `en`; переключается и в меню |
+| `ADDRESSBOOK_NAME` | `Контакты` / `Contacts` | Имя адресной книги на телефонах, задаётся при создании пользователя |
 | `TZ` | `Europe/Moscow` | Часовой пояс интерфейса и логов (в базе время в UTC) |
 | `CONTACTS_SUBNET` | `10.77.0.0/24` | Внутренняя подсеть Docker; смените, если пересекается с вашей |
+| `VISITKA_VERSION` | `latest` | Тег образов: `latest`, номер релиза вроде `1.0` или `edge` |
 
-Изменения применяются командой `docker compose up -d`.
+Изменения применяются командой `docker compose up -d`. Обновление: `docker compose pull && docker compose up -d`.
 
 ## Подключение телефонов
 
@@ -100,9 +111,18 @@ Traefik, Caddy или nginx, — проксируйте всё на `http://<с�
 ```
 
 - **caddy** — маршрутизация, `forward_auth` для CardDAV, защитные заголовки; удаляет
-  `X-Remote-User`, присланный клиентом.
+  `X-Remote-User`, присланный клиентом (`caddy:2.11.7` со встроенным Caddyfile).
 - **radicale** — хранилище CardDAV (`python:3.12-slim` + `radicale==3.8.3`), снаружи недоступен.
 - **app** — FastAPI + Jinja2 + SQLite: пользователи, пароли устройств, веб-интерфейс.
+
+## Сборка из исходников
+
+```bash
+git clone https://github.com/tanweber/Visitka.git visitka && cd visitka
+docker compose -f compose.yaml -f compose.build.yaml up -d --build
+```
+
+Чтобы всегда собирать у себя, добавьте в `.env` строку `COMPOSE_FILE=compose.yaml:compose.build.yaml`.
 
 ## Резервные копии и обслуживание
 

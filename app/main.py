@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import config
+import i18n
 import security
 from dav_client import DavClient, DavError
 from db import DevicePassword, SessionLocal, User, get_session, init_db
@@ -22,7 +23,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger("app")
 
 templates = Jinja2Templates(directory="templates")
-# типы TEL/EMAIL из vCard — по-русски
+# типы TEL/EMAIL из vCard; подписи переводит _()
 TYPE_LABELS = {
     "cell": "мобильный", "mobile": "мобильный", "iphone": "iPhone", "home": "домашний",
     "work": "рабочий", "main": "основной", "voice": "телефон", "fax": "факс",
@@ -38,13 +39,29 @@ def _local_time(value: dt.datetime | None, fmt: str = "%d.%m.%Y %H:%M") -> str:
 
 
 templates.env.filters["localtime"] = _local_time
-templates.env.filters["type_label"] = lambda value, default="": TYPE_LABELS.get((value or "").lower(), (value or "").lower() or default)
+templates.env.filters["type_label"] = lambda value, default="": i18n._(
+    TYPE_LABELS.get((value or "").lower(), (value or "").lower() or default))
+templates.env.globals["_"] = i18n._
+templates.env.globals["ngettext"] = i18n.ngettext
+templates.env.globals["current_lang"] = i18n.get_lang
+templates.env.globals["LANG_LABELS"] = i18n.LANG_LABELS
+templates.env.globals["ADDRESSBOOK_NAME"] = config.settings.addressbook_name
 templates.env.globals["THEMES"] = [
     ("auto", "Как в системе"), ("light", "Светлая"), ("dark", "Тёмная"),
     ("nord", "Nord"), ("forest", "Forest"),
 ]
-app = FastAPI(title="Contacts", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="Visitka", docs_url=None, redoc_url=None, openapi_url=None)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.middleware("http")
+async def language(request: Request, call_next):
+    """Язык интерфейса на время запроса (contextvar доходит и до sync-обработчиков)."""
+    i18n.set_lang(i18n.detect(request.cookies.get("lang"), request.headers.get("accept-language")))
+    response = await call_next(request)
+    response.headers.setdefault("Content-Language", i18n.get_lang())
+    response.headers.setdefault("Vary", "Cookie, Accept-Language")
+    return response
 
 app.include_router(auth.router)
 app.include_router(contacts.router)
@@ -103,6 +120,19 @@ def set_theme(name: str, request: Request):
     response = RedirectResponse(back, status_code=303)
     if name in THEMES:
         response.set_cookie("theme", name, max_age=60 * 60 * 24 * 365, samesite="lax",
+                            secure=config.settings.cookie_secure)
+    return response
+
+
+@app.get("/lang/{code}")
+def set_language(code: str, request: Request):
+    """Переключатель языка: cookie lang и назад на ту же страницу."""
+    back = urlsplit(request.headers.get("referer", "")).path or "/"
+    if not back.startswith("/") or back.startswith("//") or back.startswith("/lang/"):
+        back = "/"
+    response = RedirectResponse(back, status_code=303)
+    if code in i18n.LANGS:
+        response.set_cookie("lang", code, max_age=60 * 60 * 24 * 365, samesite="lax",
                             secure=config.settings.cookie_secure)
     return response
 

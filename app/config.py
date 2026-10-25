@@ -34,6 +34,10 @@ class Settings:
                            if os.environ.get("COOKIE_SECURE", "auto").strip() == "auto"
                            else _bool("COOKIE_SECURE"))
     data_dir: Path = Path(os.environ.get("DATA_DIR", "/data"))
+    # имя адресной книги на телефонах (задаётся при создании пользователя)
+    addressbook_name: str = (os.environ.get("ADDRESSBOOK_NAME", "").strip()
+                             or ("Contacts" if os.environ.get("DEFAULT_LANG", "").strip().lower() == "en"
+                                 else "Контакты"))
     session_cookie: str = "contacts_session"
     session_max_age: int = 60 * 60 * 24 * 7
     dav_rate_limit: int = 10  # неудачных попыток в минуту на пару IP+логин

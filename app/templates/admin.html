@@ -1,36 +1,36 @@
 {% extends "base.html" %}
-{% block title %}Админка — Visitka{% endblock %}
+{% block title %}{{ _("Админка") }} — Visitka{% endblock %}
 {% block content %}
-<div class="page-head"><h1>Пользователи</h1></div>
-{% if ok == "created" %}<p class="flash ok">Пользователь создан, адресная книга «Контакты» заведена.</p>{% endif %}
-{% if ok == "deleted" %}<p class="flash ok">Пользователь удалён вместе со своей адресной книгой.</p>{% endif %}
-{% if ok == "password" %}<p class="flash ok">Пароль изменён.</p>{% endif %}
-{% if error == "username" %}<p class="flash error">Логин: только a-z, 0-9, дефис и подчёркивание, 3–32 символа.</p>{% endif %}
-{% if error == "password" %}<p class="flash error">Пароль короче 8 символов.</p>{% endif %}
-{% if error == "mismatch" %}<p class="flash error">Пароли не совпадают — введите ещё раз.</p>{% endif %}
-{% if error == "exists" %}<p class="flash error">Такой пользователь уже есть.</p>{% endif %}
-{% if error == "self" %}<p class="flash error">Свой аккаунт удалить нельзя.</p>{% endif %}
+<div class="page-head"><h1>{{ _("Пользователи") }}</h1></div>
+{% if ok == "created" %}<p class="flash ok">{{ _("Пользователь создан, адресная книга «{book}» заведена.", book=ADDRESSBOOK_NAME) }}</p>{% endif %}
+{% if ok == "deleted" %}<p class="flash ok">{{ _("Пользователь удалён вместе со своей адресной книгой.") }}</p>{% endif %}
+{% if ok == "password" %}<p class="flash ok">{{ _("Пароль изменён.") }}</p>{% endif %}
+{% if error == "username" %}<p class="flash error">{{ _("Логин: только a-z, 0-9, дефис и подчёркивание, 3–32 символа.") }}</p>{% endif %}
+{% if error == "password" %}<p class="flash error">{{ _("Пароль короче 8 символов.") }}</p>{% endif %}
+{% if error == "mismatch" %}<p class="flash error">{{ _("Пароли не совпадают — введите ещё раз.") }}</p>{% endif %}
+{% if error == "exists" %}<p class="flash error">{{ _("Такой пользователь уже есть.") }}</p>{% endif %}
+{% if error == "self" %}<p class="flash error">{{ _("Свой аккаунт удалить нельзя.") }}</p>{% endif %}
 
 <ul class="list card-list">
   {% for u in users %}
   <li class="user-row">
     <span class="avatar tone-{{ loop.index0 % 8 }}" aria-hidden="true">{{ u.username[:1]|upper }}</span>
     <span class="who"><strong>{{ u.username }}</strong>
-      <em>{{ "администратор" if u.is_admin else "пользователь" }} · с {{ u.created_at|localtime("%d.%m.%Y") }}</em>
+      <em>{{ _("администратор") if u.is_admin else _("пользователь") }} · {{ _("с {date}", date=u.created_at|localtime("%d.%m.%Y")) }}</em>
     </span>
     <details class="row-more">
-      <summary class="text-button">Управление</summary>
+      <summary class="text-button">{{ _("Управление") }}</summary>
       <div class="row-more-body">
         <form method="post" action="/admin/users/{{ u.username }}/password" class="password-form">
           <input type="hidden" name="csrf" value="{{ csrf }}">
-          <input name="password" type="password" placeholder="Новый пароль, от 8 символов" aria-label="Новый пароль" minlength="8" required autocomplete="new-password">
-          <input name="password2" type="password" placeholder="Повторите пароль" aria-label="Повторите пароль" minlength="8" required autocomplete="new-password" data-match="password">
-          <button type="submit" class="button ghost">Сменить пароль</button>
+          <input name="password" type="password" placeholder="{{ _('Новый пароль, от 8 символов') }}" aria-label="{{ _('Новый пароль') }}" minlength="8" required autocomplete="new-password">
+          <input name="password2" type="password" placeholder="{{ _('Повторите пароль') }}" aria-label="{{ _('Повторите пароль') }}" minlength="8" required autocomplete="new-password" data-match="password">
+          <button type="submit" class="button ghost">{{ _("Сменить пароль") }}</button>
         </form>
         {% if u.username != user.username %}
-        <form method="post" action="/admin/users/{{ u.username }}/delete" data-confirm="Удалить пользователя {{ u.username }} и все его контакты?">
+        <form method="post" action="/admin/users/{{ u.username }}/delete" data-confirm="{{ _('Удалить пользователя {name} и все его контакты?', name=u.username) }}">
           <input type="hidden" name="csrf" value="{{ csrf }}">
-          <button type="submit" class="text-button danger-text">Удалить пользователя</button>
+          <button type="submit" class="text-button danger-text">{{ _("Удалить пользователя") }}</button>
         </form>
         {% endif %}
       </div>
@@ -39,15 +39,15 @@
   {% endfor %}
 </ul>
 
-<h2 class="section-title">Новый пользователь</h2>
+<h2 class="section-title">{{ _("Новый пользователь") }}</h2>
 <form method="post" action="/admin/users">
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <div class="card inputs">
-    <input name="username" pattern="[a-z0-9_\-]{3,32}" required placeholder="Логин (a-z, 0-9, _ -)" aria-label="Логин" autocapitalize="none" autocomplete="off">
-    <input name="password" type="password" minlength="8" required placeholder="Пароль, от 8 символов" aria-label="Пароль" autocomplete="new-password">
-    <input name="password2" type="password" minlength="8" required placeholder="Повторите пароль" aria-label="Повторите пароль" autocomplete="new-password" data-match="password">
-    <label class="check"><input type="checkbox" name="is_admin" value="1"> Администратор</label>
+    <input name="username" pattern="[a-z0-9_\-]{3,32}" required placeholder="{{ _('Логин (a-z, 0-9, _ -)') }}" aria-label="{{ _('Логин') }}" autocapitalize="none" autocomplete="off">
+    <input name="password" type="password" minlength="8" required placeholder="{{ _('Пароль, от 8 символов') }}" aria-label="{{ _('Пароль') }}" autocomplete="new-password">
+    <input name="password2" type="password" minlength="8" required placeholder="{{ _('Повторите пароль') }}" aria-label="{{ _('Повторите пароль') }}" autocomplete="new-password" data-match="password">
+    <label class="check"><input type="checkbox" name="is_admin" value="1"> {{ _("Администратор") }}</label>
   </div>
-  <div class="form-foot"><button type="submit" class="button">Создать</button></div>
+  <div class="form-foot"><button type="submit" class="button">{{ _("Создать") }}</button></div>
 </form>
 {% endblock %}

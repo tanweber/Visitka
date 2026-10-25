@@ -1,5 +1,44 @@
 // Inline-обработчики запрещены CSP, поэтому всё поведение страниц — здесь.
 
+// ===== язык: исходные строки русские, английский — словарь EN (как i18n_en.py) =====
+const LANG = document.documentElement.lang === "en" ? "en" : "ru";
+const EN = {
+  "Не удалось скопировать — выделите текст вручную.": "Couldn't copy — select the text manually.",
+  "Скопировано": "Copied",
+  "Пароли не совпадают": "Passwords don't match",
+  "Обрезка фото": "Crop photo",
+  "Отмена": "Cancel",
+  "Фото": "Photo",
+  "Готово": "Done",
+  "Масштаб": "Zoom",
+  "Перетащите фото и приблизьте ползунком, колёсиком или двумя пальцами": "Drag the photo; zoom with the slider, mouse wheel or two fingers",
+  "Браузер не смог показать это фото — оно будет обрезано по центру.": "The browser can't display this photo — it will be cropped to the center.",
+  "Нажмите, чтобы изменить обрезку": "Click to adjust the crop",
+  "МБ": "MB",
+  "КБ": "KB",
+  "Минутку…": "Just a moment…",
+  "Загружаю файл…": "Uploading file…",
+  "Сохраняю контакты…": "Saving contacts…",
+  "{done} из {total}": "{done} of {total}",
+  "Связь прервалась. Импорт продолжается на сервере — обновите список чуть позже.": "Connection lost. The import continues on the server — refresh the list a bit later.",
+  "Читаю файл…": "Reading file…",
+  "Файл слишком большой для сервера.": "The file is too large for the server.",
+  "Не удалось импортировать (ошибка {status}).": "Import failed (error {status}).",
+  "Импортирую контакты…": "Importing contacts…",
+  "Готовлю файл…": "Preparing file…",
+  "Сохранено: {name} · {size}": "Saved: {name} · {size}",
+  "Не удалось скачать файл.": "Download failed.",
+  "Найдено {n} из {total}": "Found {n} of {total}",
+  "Организация": "Organization",
+  "Все организации": "All organizations",
+};
+const EN_PLURAL = { "контакт": ["contact", "contacts"] };
+
+function t(text, values = {}) {
+  const template = LANG === "en" ? (EN[text] || text) : text;
+  return template.replace(/\{(\w+)\}/g, (match, key) => (key in values ? values[key] : match));
+}
+
 // подтверждение опасных действий
 document.addEventListener("submit", (event) => {
   const message = event.target.dataset && event.target.dataset.confirm;
@@ -31,14 +70,14 @@ document.addEventListener("click", (event) => {
     const source = document.querySelector(copy.dataset.copy);
     if (source) {
       copyText(source.textContent.trim(), source).then((ok) => {
-        if (!ok) return toast("Не удалось скопировать — выделите текст вручную.", { timeout: 3000 });
+        if (!ok) return toast(t("Не удалось скопировать — выделите текст вручную."), { timeout: 3000 });
         if (copy.classList.contains("copy-icon")) {
           copy.classList.add("is-copied");
           setTimeout(() => copy.classList.remove("is-copied"), 1600);
-          toast("Скопировано", { timeout: 1600 });
+          toast(t("Скопировано"), { timeout: 1600 });
         } else {
           const label = copy.textContent;
-          copy.textContent = "Скопировано";
+          copy.textContent = t("Скопировано");
           setTimeout(() => { copy.textContent = label; }, 1600);
         }
       });
@@ -84,7 +123,7 @@ document.addEventListener("input", (event) => {
   if (!repeat) return;
   const original = form.elements[repeat.dataset.match];
   const mismatch = repeat.value !== "" && repeat.value !== original.value;
-  repeat.setCustomValidity(mismatch ? "Пароли не совпадают" : "");
+  repeat.setCustomValidity(mismatch ? t("Пароли не совпадают") : "");
   repeat.classList.toggle("is-mismatch", mismatch);
 });
 
@@ -99,17 +138,17 @@ function openCropper(url, saved, onDone) {
   box.className = "cropper";
   box.setAttribute("role", "dialog");
   box.setAttribute("aria-modal", "true");
-  box.setAttribute("aria-label", "Обрезка фото");
+  box.setAttribute("aria-label", t("Обрезка фото"));
   box.innerHTML =
     '<div class="cropper-box">' +
-    '<div class="cropper-head"><button type="button" class="text-button" data-crop-cancel>Отмена</button>' +
-    '<strong>Фото</strong><button type="button" class="text-button strong" data-crop-done>Готово</button></div>' +
+    `<div class="cropper-head"><button type="button" class="text-button" data-crop-cancel>${t("Отмена")}</button>` +
+    `<strong>${t("Фото")}</strong><button type="button" class="text-button strong" data-crop-done>${t("Готово")}</button></div>` +
     '<div class="cropper-stage"><img alt="" draggable="false"><div class="cropper-ring"></div></div>' +
     '<div class="cropper-zoom">' +
     '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/></svg>' +
-    `<input type="range" min="1" max="${MAX_ZOOM}" step="0.01" value="1" aria-label="Масштаб">` +
+    `<input type="range" min="1" max="${MAX_ZOOM}" step="0.01" value="1" aria-label="${t("Масштаб")}">` +
     '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg></div>' +
-    '<p class="hint">Перетащите фото и приблизьте ползунком, колёсиком или двумя пальцами</p>' +
+    `<p class="hint">${t("Перетащите фото и приблизьте ползунком, колёсиком или двумя пальцами")}</p>` +
     "</div>";
   const stage = box.querySelector(".cropper-stage");
   const img = box.querySelector("img");
@@ -213,7 +252,7 @@ function openCropper(url, saved, onDone) {
   });
   img.addEventListener("error", () => {
     close();
-    toast("Браузер не смог показать это фото — оно будет обрезано по центру.", { timeout: 5000 });
+    toast(t("Браузер не смог показать это фото — оно будет обрезано по центру."), { timeout: 5000 });
     onDone(null, true);
   });
   document.body.append(box);
@@ -233,7 +272,7 @@ function initPhotoPicker() {
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 224;  // xl-аватар 112px × 2 для чётких экранов
     canvas.className = "avatar xl";
-    canvas.title = "Нажмите, чтобы изменить обрезку";
+    canvas.title = t("Нажмите, чтобы изменить обрезку");
     const { sx, sy, side } = result.rect;
     canvas.getContext("2d").drawImage(result.img, sx, sy, side, side, 0, 0, 224, 224);
     preview.replaceChildren(canvas);
@@ -324,7 +363,7 @@ function toast(message, { busy = false, timeout = 0 } = {}) {
 }
 
 function formatSize(bytes) {
-  return bytes > 1048576 ? `${(bytes / 1048576).toFixed(1)} МБ` : `${Math.max(1, Math.round(bytes / 1024))} КБ`;
+  return bytes > 1048576 ? `${(bytes / 1048576).toFixed(1)} ${t("МБ")}` : `${Math.max(1, Math.round(bytes / 1024))} ${t("КБ")}`;
 }
 
 // формы с data-busy: после подтверждения — блокировка кнопки и экран ожидания
@@ -333,7 +372,7 @@ document.addEventListener("submit", (event) => {
   if (event.defaultPrevented || !form.dataset || !("busy" in form.dataset)) return;
   if (form.matches("[data-import]")) return;  // у импорта свой обработчик с прогрессом
   form.classList.add("is-busy");
-  overlay(form.dataset.busy || "Минутку…");
+  overlay(form.dataset.busy || t("Минутку…"));
 });
 
 // импорт: этап 1 — отправка файла (XHR, прогресс по байтам),
@@ -343,7 +382,7 @@ document.addEventListener("submit", (event) => {
   if (event.defaultPrevented || !form.matches || !form.matches("[data-import]")) return;
   if (!window.XMLHttpRequest || !window.fetch) return;  // обычная отправка формы
   event.preventDefault();
-  const busy = overlay("Загружаю файл…", { progress: true });
+  const busy = overlay(t("Загружаю файл…"), { progress: true });
   busy.percent(0, "");
   const fail = (message) => {
     clearBusy();
@@ -351,8 +390,8 @@ document.addEventListener("submit", (event) => {
   };
 
   const poll = async (job, total) => {
-    busy.text("Сохраняю контакты…");
-    busy.percent(0, `0 из ${total}`);
+    busy.text(t("Сохраняю контакты…"));
+    busy.percent(0, t("{done} из {total}", { done: 0, total }));
     for (;;) {
       let state;
       try {
@@ -360,13 +399,13 @@ document.addEventListener("submit", (event) => {
         if (!response.ok) throw new Error(response.status);
         state = await response.json();
       } catch (err) {
-        fail("Связь прервалась. Импорт продолжается на сервере — обновите список чуть позже.");
+        fail(t("Связь прервалась. Импорт продолжается на сервере — обновите список чуть позже."));
         return;
       }
       const pct = state.total ? Math.round((state.done / state.total) * 100) : 100;
-      busy.percent(pct, `${state.done} из ${state.total}`);
+      busy.percent(pct, t("{done} из {total}", { done: state.done, total: state.total }));
       if (state.finished) {
-        busy.text("Готово");
+        busy.text(t("Готово"));
         window.location.href = `/import?job=${encodeURIComponent(job)}`;
         return;
       }
@@ -379,11 +418,11 @@ document.addEventListener("submit", (event) => {
   xhr.setRequestHeader("X-Import-Progress", "1");
   xhr.upload.addEventListener("progress", (e) => {
     if (e.lengthComputable) {
-      busy.percent(Math.round((e.loaded / e.total) * 100), `${formatSize(e.loaded)} из ${formatSize(e.total)}`);
+      busy.percent(Math.round((e.loaded / e.total) * 100), t("{done} из {total}", { done: formatSize(e.loaded), total: formatSize(e.total) }));
     }
   });
   xhr.upload.addEventListener("load", () => {
-    busy.text("Читаю файл…");
+    busy.text(t("Читаю файл…"));
     busy.percent(null, "");
   });
   xhr.addEventListener("load", () => {
@@ -392,17 +431,17 @@ document.addEventListener("submit", (event) => {
       window.location.href = "/login";
       return;
     }
-    if (xhr.status === 413) return fail("Файл слишком большой для сервера.");
+    if (xhr.status === 413) return fail(t("Файл слишком большой для сервера."));
     let data = null;
     try { data = JSON.parse(xhr.responseText); } catch (err) { /* не JSON */ }
     if (xhr.status !== 200 || !data || !data.job) {
-      return fail(`Не удалось импортировать (ошибка ${xhr.status}).`);
+      return fail(t("Не удалось импортировать (ошибка {status}).", { status: xhr.status }));
     }
     poll(data.job, data.total);
   });
   xhr.addEventListener("error", () => {
     // XHR не прошёл (сеть, прокси, политика браузера) — отправляем форму обычным способом
-    busy.text("Импортирую контакты…");
+    busy.text(t("Импортирую контакты…"));
     busy.percent(null, "");
     HTMLFormElement.prototype.submit.call(form);
   });
@@ -415,7 +454,7 @@ document.addEventListener("click", async (event) => {
   if (!link || !window.fetch) return;
   event.preventDefault();
   link.closest("details")?.removeAttribute("open");
-  const pending = toast(link.dataset.download || "Готовлю файл…", { busy: true });
+  const pending = toast(link.dataset.download || t("Готовлю файл…"), { busy: true });
   // страховка: плашка ожидания не висит дольше двух минут
   const guard = setTimeout(() => pending.remove(), 120000);
   try {
@@ -432,9 +471,9 @@ document.addEventListener("click", async (event) => {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
-    toast(`Сохранено: ${name} · ${formatSize(blob.size)}`, { timeout: 3000 });
+    toast(t("Сохранено: {name} · {size}", { name, size: formatSize(blob.size) }), { timeout: 3000 });
   } catch (err) {
-    toast("Не удалось скачать файл.", { timeout: 4000 });
+    toast(t("Не удалось скачать файл."), { timeout: 4000 });
   } finally {
     clearTimeout(guard);
     pending.remove();
@@ -480,6 +519,10 @@ function initPage() {
 // ===== список: поиск на лету и алфавит =====
 
 function plural(n, one, few, many) {
+  if (LANG === "en") {
+    const [singular, pluralForm] = EN_PLURAL[one] || [one, many];
+    return n === 1 ? singular : pluralForm;
+  }
   const d = n % 10, h = n % 100;
   if (d === 1 && h !== 11) return one;
   if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return few;
@@ -554,7 +597,7 @@ function initLiveSearch() {
     }
     groups.forEach((g) => { g.hidden = !g.querySelector("li:not([hidden])"); });
     count.textContent = filtering
-      ? `Найдено ${shown} из ${total}`
+      ? t("Найдено {n} из {total}", { n: shown, total })
       : `${total} ${plural(total, "контакт", "контакта", "контактов")}`;
     if (empty) empty.hidden = !filtering || shown > 0;
     if (alphabet) {
@@ -598,7 +641,7 @@ function initOrgPicker() {
   const panel = document.createElement("div");
   panel.className = "menu-panel";
   panel.setAttribute("role", "listbox");
-  panel.setAttribute("aria-label", "Организация");
+  panel.setAttribute("aria-label", t("Организация"));
   const tick = '<svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   const options = [...select.options].map((opt) => {
     const button = document.createElement("button");
@@ -622,7 +665,7 @@ function initOrgPicker() {
       options[i].classList.toggle("is-empty", n === "0" && opt.value !== select.value);
     });
     const current = select.selectedOptions[0];
-    summary.textContent = current ? current.textContent.split(" · ")[0] : "Все организации";
+    summary.textContent = current ? current.textContent.split(" · ")[0] : t("Все организации");
     options.forEach((b) => b.setAttribute("aria-current", String(b.dataset.value === select.value)));
   };
   panel.addEventListener("click", (event) => {

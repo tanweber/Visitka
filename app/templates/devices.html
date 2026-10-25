@@ -1,55 +1,71 @@
 {% extends "base.html" %}
-{% block title %}Устройства — Visitka{% endblock %}
+{% block title %}{{ _("Устройства") }} — Visitka{% endblock %}
 {% block content %}
-<div class="page-head"><h1>Устройства</h1></div>
+<div class="page-head"><h1>{{ _("Устройства") }}</h1></div>
 
 {% if new_secret %}
 <section class="card secret-card">
-  <p><strong>Пароль для «{{ new_name }}» создан</strong></p>
-  <p class="hint">Скопируйте его сейчас — второй раз он не покажется.</p>
+  <p><strong>{{ _("Пароль для «{name}» создан", name=new_name) }}</strong></p>
+  <p class="hint">{{ _("Скопируйте его сейчас — второй раз он не покажется.") }}</p>
   <div class="secret-row">
     <code class="secret" id="new-secret">{{ new_secret }}</code>
-    <button type="button" class="button ghost small" data-copy="#new-secret">Копировать</button>
+    <button type="button" class="button ghost small" data-copy="#new-secret">{{ _("Копировать") }}</button>
   </div>
 </section>
 {% endif %}
 
-<h2 class="section-title">Новый пароль устройства</h2>
+<h2 class="section-title">{{ _("Новый пароль устройства") }}</h2>
 <form method="post" action="/devices" class="card inline-form">
   <input type="hidden" name="csrf" value="{{ csrf }}">
-  <input name="name" placeholder="Название, например Pixel 9" aria-label="Название устройства" required maxlength="64">
-  <button type="submit" class="button">Создать</button>
+  <input name="name" placeholder="{{ _('Название, например Pixel 9') }}" aria-label="{{ _('Название устройства') }}" required maxlength="64">
+  <button type="submit" class="button">{{ _("Создать") }}</button>
 </form>
 
-<h2 class="section-title">Мои устройства</h2>
+<h2 class="section-title">{{ _("Мои устройства") }}</h2>
 <ul class="list card-list">
   {% for d in devices %}
   <li>
     <span class="device-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg></span>
-    <span class="who"><strong>{{ d.name }}</strong><em>создан {{ d.created_at|localtime("%d.%m.%Y") }}{% if d.last_used_at %} · синхронизация {{ d.last_used_at|localtime }}{% else %} · ещё не подключался{% endif %}</em></span>
-    <form method="post" action="/devices/{{ d.id }}/revoke" data-confirm="Отозвать пароль «{{ d.name }}»? Телефон перестанет синхронизироваться.">
+    <span class="who"><strong>{{ d.name }}</strong><em>{{ _("создан {date}", date=d.created_at|localtime("%d.%m.%Y")) }}{% if d.last_used_at %} · {{ _("синхронизация {date}", date=d.last_used_at|localtime) }}{% else %} · {{ _("ещё не подключался") }}{% endif %}</em></span>
+    <form method="post" action="/devices/{{ d.id }}/revoke" data-confirm="{{ _('Отозвать пароль «{name}»? Телефон перестанет синхронизироваться.', name=d.name) }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <button type="submit" class="text-button danger-text">Отозвать</button>
+      <button type="submit" class="text-button danger-text">{{ _("Отозвать") }}</button>
     </form>
   </li>
   {% else %}
-  <li class="empty">Паролей устройств пока нет.</li>
+  <li class="empty">{{ _("Паролей устройств пока нет.") }}</li>
   {% endfor %}
 </ul>
 
-<h2 class="section-title">Как подключить DAVx5 на Android</h2>
+{% macro copy_button(target, label) -%}
+<button type="button" class="copy-icon" data-copy="{{ target }}" aria-label="{{ label }}" title="{{ label }}">
+  <svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg>
+  <svg class="i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+</button>
+{%- endmacro %}
+
+<h2 class="section-title">{{ _("Как подключить телефон") }}</h2>
 <section class="card">
+  <p class="hint">{{ _("Адрес сервера и имя пользователя одинаковы для всех приложений:") }}</p>
+  <ul class="steps">
+    <li>{{ _("Адрес сервера") }}: <span class="copyable"><code id="server-url">{{ public_url }}</code>{{ copy_button("#server-url", _("Скопировать адрес сервера")) }}</span></li>
+    <li>{{ _("Имя пользователя") }}: <span class="copyable"><code id="dav-username">{{ username }}</code>{{ copy_button("#dav-username", _("Скопировать имя пользователя")) }}</span></li>
+    <li>{{ _("Пароль — пароль устройства (не пароль входа на сайт).") }}</li>
+  </ul>
+</section>
+<section class="card">
+  <p><strong>Android · DAVx5</strong></p>
   <ol class="steps">
-    <li>Откройте DAVx5 → «+» → «Вход по URL и имени пользователя».</li>
-    <li>Базовый URL: <span class="copyable"><code id="server-url">{{ public_url }}</code><button type="button" class="copy-icon" data-copy="#server-url" aria-label="Скопировать адрес сервера" title="Скопировать адрес сервера">
-      <svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg>
-      <svg class="i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-    </button></span></li>
-    <li>Имя пользователя: <span class="copyable"><code id="dav-username">{{ username }}</code><button type="button" class="copy-icon" data-copy="#dav-username" aria-label="Скопировать имя пользователя" title="Скопировать имя пользователя">
-      <svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg>
-      <svg class="i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-    </button></span>, пароль — пароль устройства (не пароль входа на сайт).</li>
-    <li>В аккаунте выберите адресную книгу «Контакты» и включите синхронизацию.</li>
+    <li>{{ _("Откройте DAVx5 → «+» → «Вход по URL и имени пользователя».") }}</li>
+    <li>{{ _("Введите адрес сервера, имя пользователя и пароль устройства.") }}</li>
+    <li>{{ _("В аккаунте выберите адресную книгу «{book}» и включите синхронизацию.", book=ADDRESSBOOK_NAME) }}</li>
+  </ol>
+</section>
+<section class="card">
+  <p><strong>iPhone · iPad</strong></p>
+  <ol class="steps">
+    <li>{{ _("Настройки → Контакты → Учётные записи → Новая учётная запись → Другое.") }}</li>
+    <li>{{ _("«Учётная запись CardDAV»: сервер — адрес без https://, имя пользователя и пароль устройства.") }}</li>
   </ol>
 </section>
 {% endblock %}

@@ -1,0 +1,10 @@
+# Сборка образов из исходников вместо готовых с ghcr.io:
+#   docker compose -f compose.yaml -f compose.build.yaml up -d --build
+# или один раз в .env: COMPOSE_FILE=compose.yaml:compose.build.yaml
+services:
+  caddy:
+    build: ./caddy
+  radicale:
+    build: ./radicale
+  app:
+    build: ./app

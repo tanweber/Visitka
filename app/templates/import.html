@@ -1,52 +1,52 @@
 {% extends "base.html" %}
-{% block title %}Импорт — Visitka{% endblock %}
+{% block title %}{{ _("Импорт") }} — Visitka{% endblock %}
 {% block content %}
-<a class="back" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>Контакты</a>
-<div class="page-head"><h1>Импорт</h1></div>
+<a class="back" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>{{ _("Контакты") }}</a>
+<div class="page-head"><h1>{{ _("Импорт") }}</h1></div>
 
 {% if result %}
 <section class="card">
-  <p><strong>{{ "Готово" if not result.failed else "Готово, но не всё" }}</strong> · карточек в файле: {{ result.total }}</p>
+  <p><strong>{{ _("Готово") if not result.failed else _("Готово, но не всё") }}</strong> · {{ _("карточек в файле: {n}", n=result.total) }}</p>
   <div class="stats">
-    <div class="stat"><b>{{ result.added }}</b><span>добавлено</span></div>
-    <div class="stat"><b>{{ result.updated }}</b><span>обновлено</span></div>
-    <div class="stat"><b>{{ result.skipped }}</b><span>уже были</span></div>
-    <div class="stat"><b>{{ result.failed }}</b><span>ошибки</span></div>
+    <div class="stat"><b>{{ result.added }}</b><span>{{ _("добавлено") }}</span></div>
+    <div class="stat"><b>{{ result.updated }}</b><span>{{ _("обновлено") }}</span></div>
+    <div class="stat"><b>{{ result.skipped }}</b><span>{{ _("уже были") }}</span></div>
+    <div class="stat"><b>{{ result.failed }}</b><span>{{ _("ошибки") }}</span></div>
   </div>
   {% for e in result.errors %}<p class="flash error">{{ e }}</p>{% endfor %}
-  {% if result.total == 0 %}<p class="hint">В файле не нашлось карточек vCard (BEGIN:VCARD … END:VCARD).</p>{% endif %}
-  <p><a class="button" href="/">К списку</a></p>
+  {% if result.total == 0 %}<p class="hint">{{ _("В файле не нашлось карточек vCard (BEGIN:VCARD … END:VCARD).") }}</p>{% endif %}
+  <p><a class="button" href="/">{{ _("К списку") }}</a></p>
 </section>
-<h2 class="section-title">Загрузить ещё</h2>
+<h2 class="section-title">{{ _("Загрузить ещё") }}</h2>
 {% endif %}
 
 <form method="post" action="/import" enctype="multipart/form-data" data-import>
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <label class="dropzone" data-dropzone>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M4.5 14v3.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V14"/></svg>
-    <strong>Выберите файл .vcf</strong>
-    <span class="hint">или перетащите сюда · можно несколько, до 20 МБ</span>
+    <strong>{{ _("Выберите файл .vcf") }}</strong>
+    <span class="hint">{{ _("или перетащите сюда · можно несколько, до 20 МБ") }}</span>
     <span class="files" data-files></span>
     <input type="file" name="files" accept=".vcf,.vcard,text/vcard,text/x-vcard" multiple required class="visually-hidden">
   </label>
 
-  <h2 class="section-title">Если контакт уже есть</h2>
+  <h2 class="section-title">{{ _("Если контакт уже есть") }}</h2>
   <div class="card inputs choices">
     <label class="check"><input type="radio" name="mode" value="skip" checked>
-      <span>Пропустить<em>сохранить то, что уже в адресной книге</em></span></label>
+      <span>{{ _("Пропустить") }}<em>{{ _("сохранить то, что уже в адресной книге") }}</em></span></label>
     <label class="check"><input type="radio" name="mode" value="replace">
-      <span>Заменить<em>перезаписать карточкой из файла</em></span></label>
+      <span>{{ _("Заменить") }}<em>{{ _("перезаписать карточкой из файла") }}</em></span></label>
   </div>
-  <p class="hint">Совпадение определяется по UID карточки. Фото и все поля переносятся как есть.</p>
-  <div class="form-foot"><button type="submit" class="button">Импортировать</button></div>
+  <p class="hint">{{ _("Совпадение определяется по UID карточки. Фото и все поля переносятся как есть.") }}</p>
+  <div class="form-foot"><button type="submit" class="button">{{ _("Импортировать") }}</button></div>
 </form>
 
-<h2 class="section-title">Где взять файл</h2>
+<h2 class="section-title">{{ _("Где взять файл") }}</h2>
 <section class="card">
   <ul class="steps">
-    <li><b>Android</b>: приложение «Контакты» → Настройки → Экспорт → файл .vcf.</li>
-    <li><b>iPhone</b>: icloud.com → Контакты → выделить → «Экспортировать vCard».</li>
-    <li><b>Google</b>: contacts.google.com → Экспорт → «vCard (для iOS)».</li>
+    <li><b>Android</b>: {{ _("приложение «Контакты» → Настройки → Экспорт → файл .vcf.") }}</li>
+    <li><b>iPhone</b>: {{ _("icloud.com → Контакты → выделить → «Экспортировать vCard».") }}</li>
+    <li><b>Google</b>: {{ _("contacts.google.com → Экспорт → «vCard (для iOS)».") }}</li>
   </ul>
 </section>
 {% endblock %}

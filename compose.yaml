@@ -1,5 +1,8 @@
 name: visitka
 
+# Готовые образы — ghcr.io/tanweber/visitka-{app,radicale,caddy}.
+# Сборка из исходников: docker compose -f compose.yaml -f compose.build.yaml up -d --build
+
 # общие настройки защиты: без повышения привилегий, без capabilities,
 # корневая ФС только на чтение, ротация логов
 x-hardening: &hardening
@@ -20,18 +23,16 @@ x-hardening: &hardening
 services:
   caddy:
     <<: *hardening
-    image: caddy:2.11.7
+    # caddy:2.11.7 + Caddyfile + tzdata (caddy/Dockerfile)
+    image: ${VISITKA_IMAGE_PREFIX:-ghcr.io/tanweber/visitka}-caddy:${VISITKA_VERSION:-latest}
     # у бинарника caddy есть file-capability: без неё exec падает с EPERM
     cap_add:
       - NET_BIND_SERVICE
     ports:
       - "${CADDY_HTTP_PORT:-8080}:8080"
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-      # в образе Caddy нет базы часовых поясов — берём с хоста, иначе TZ не работает
-      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
     environment:
       CADDY_HTTP_PORT: "8080"
       TZ: ${TZ:-Europe/Moscow}
@@ -50,7 +51,7 @@ services:
 
   radicale:
     <<: *hardening
-    build: ./radicale
+    image: ${VISITKA_IMAGE_PREFIX:-ghcr.io/tanweber/visitka}-radicale:${VISITKA_VERSION:-latest}
     environment:
       TZ: ${TZ:-Europe/Moscow}
     volumes:
@@ -72,7 +73,7 @@ services:
 
   app:
     <<: *hardening
-    build: ./app
+    image: ${VISITKA_IMAGE_PREFIX:-ghcr.io/tanweber/visitka}-app:${VISITKA_VERSION:-latest}
     volumes:
       - app_data:/data
     # .env необязателен: без него — admin/admin и смена пароля при первом входе

@@ -11,6 +11,7 @@ import config
 import security
 from db import DevicePassword, get_session
 from routes.deps import SessionUser, current_session, require_csrf
+from i18n import _
 
 router = APIRouter()
 
@@ -47,7 +48,7 @@ def create_device(
     current: SessionUser = Depends(current_session),
 ):
     require_csrf(csrf, current)
-    name = (name or "").strip()[:64] or "Устройство"
+    name = (name or "").strip()[:64] or _("Устройство")
     secret = security.new_device_secret()
     session.add(DevicePassword(
         user_id=current.user.id, name=name,

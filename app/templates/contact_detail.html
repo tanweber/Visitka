@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% from "_avatar.html" import avatar %}
-{% block title %}{{ contact.fn or "Контакт" }} — Visitka{% endblock %}
+{% block title %}{{ contact.fn or _("Контакт") }} — Visitka{% endblock %}
 {% block content %}
-<a class="back" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>Контакты</a>
+<a class="back" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 6l-6 6 6 6"/></svg>{{ _("Контакты") }}</a>
 
 <section class="hero">
   {{ avatar(contact, uid, "xl") }}
-  <h1>{{ contact.fn or "Без имени" }}</h1>
+  <h1>{{ contact.fn or _("Без имени") }}</h1>
   {% if contact.title or contact.org %}
   <p class="hint">{{ contact.title }}{% if contact.title and contact.org %} · {% endif %}{{ contact.org }}</p>
   {% endif %}
@@ -14,49 +14,49 @@
     {% if contact.tel %}
     <a class="quick-action" href="tel:{{ contact.tel[0].value|replace(' ', '') }}">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5h2.6l1.4 4-2 1.5a12 12 0 0 0 6.4 6.4l1.5-2 4 1.4v2.6a2 2 0 0 1-2.2 2A17 17 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2z"/></svg>
-      <span>Позвонить</span>
+      <span>{{ _("Позвонить") }}</span>
     </a>
     {% endif %}
     {% if contact.email %}
     <a class="quick-action" href="mailto:{{ contact.email[0].value }}">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M4 7l8 6 8-6"/></svg>
-      <span>Написать</span>
+      <span>{{ _("Написать") }}</span>
     </a>
     {% endif %}
     <a class="quick-action" href="/contacts/{{ uid|urlencode }}/edit">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
-      <span>Править</span>
+      <span>{{ _("Править") }}</span>
     </a>
   </div>
 </section>
 
-{% if ok %}<p class="flash ok">Сохранено.</p>{% endif %}
+{% if ok %}<p class="flash ok">{{ _("Сохранено.") }}</p>{% endif %}
 
 {% if contact.tel or contact.email or contact.bday or contact.url %}
 <section class="card fields">
   {% for t in contact.tel %}
-  <div class="field"><span class="label">{{ t.type|type_label("телефон") }}</span><a href="tel:{{ t.value|replace(' ', '') }}">{{ t.value }}</a></div>
+  <div class="field"><span class="label">{{ t.type|type_label(_("телефон")) }}</span><a href="tel:{{ t.value|replace(' ', '') }}">{{ t.value }}</a></div>
   {% endfor %}
   {% for e in contact.email %}
   <div class="field"><span class="label">{{ e.type|type_label("e-mail") }}</span><a href="mailto:{{ e.value }}">{{ e.value }}</a></div>
   {% endfor %}
-  {% if contact.bday %}<div class="field"><span class="label">день рождения</span><span>{{ contact.bday_text }}</span></div>{% endif %}
-  {% if contact.url %}<div class="field"><span class="label">сайт</span>{% if contact.url_safe %}<a href="{{ contact.url }}" rel="noopener noreferrer" target="_blank">{{ contact.url }}</a>{% else %}<span>{{ contact.url }}</span>{% endif %}</div>{% endif %}
+  {% if contact.bday %}<div class="field"><span class="label">{{ _("день рождения") }}</span><span>{{ contact.bday_text }}</span></div>{% endif %}
+  {% if contact.url %}<div class="field"><span class="label">{{ _("сайт") }}</span>{% if contact.url_safe %}<a href="{{ contact.url }}" rel="noopener noreferrer" target="_blank">{{ contact.url }}</a>{% else %}<span>{{ contact.url }}</span>{% endif %}</div>{% endif %}
 </section>
 {% endif %}
 
 {% if contact.note %}
 <section class="card fields">
-  <div class="field"><span class="label">заметка</span><span class="note">{{ contact.note }}</span></div>
+  <div class="field"><span class="label">{{ _("заметка") }}</span><span class="note">{{ contact.note }}</span></div>
 </section>
 {% endif %}
 
 <section class="card fields">
-  <div class="field"><a href="/contacts/{{ uid|urlencode }}/export.vcf" download data-download="Готовлю карточку…">Экспорт в .vcf</a></div>
-  <form method="post" action="/contacts/{{ uid|urlencode }}/delete" data-confirm="Удалить контакт «{{ contact.fn }}»?">
+  <div class="field"><a href="/contacts/{{ uid|urlencode }}/export.vcf" download data-download="{{ _('Готовлю карточку…') }}">{{ _("Экспорт в .vcf") }}</a></div>
+  <form method="post" action="/contacts/{{ uid|urlencode }}/delete" data-confirm="{{ _('Удалить контакт «{name}»?', name=contact.fn) }}">
     <input type="hidden" name="csrf" value="{{ csrf }}">
     <input type="hidden" name="etag" value="{{ contact.etag }}">
-    <button type="submit" class="row-button danger-text">Удалить контакт</button>
+    <button type="submit" class="row-button danger-text">{{ _("Удалить контакт") }}</button>
   </form>
 </section>
 {% endblock %}

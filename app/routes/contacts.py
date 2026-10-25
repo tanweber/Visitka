@@ -13,6 +13,7 @@ import photos
 import vcard as vcard_module
 from dav_client import DavClient, DavError, href_for
 from routes.deps import SessionUser, current_session, require_csrf
+from i18n import _
 
 router = APIRouter()
 # имя файла карточки: клиенты пишут разное, но без разделителей пути и URL
@@ -26,7 +27,7 @@ _list_lock = threading.Lock()
 
 def _href(uid: str) -> str:
     if not UID_RE.match(uid) or uid.startswith("."):
-        raise HTTPException(status_code=404, detail="Контакт не найден")
+        raise HTTPException(status_code=404, detail=_("Контакт не найден"))
     return href_for(uid)
 
 
@@ -166,7 +167,7 @@ class ContactForm:
 
 
 def _form_error(exc: Exception) -> str:
-    return f"Фото: {exc}." if isinstance(exc, photos.PhotoError) else str(exc)
+    return _("Фото: {error}.", error=exc) if isinstance(exc, photos.PhotoError) else str(exc)
 
 
 def _form(request: Request, current: SessionUser, mode: str, contact: dict,
@@ -282,7 +283,7 @@ def edit_form(uid: str, request: Request, current: SessionUser = Depends(current
     parsed["etag"] = etag
     error = None
     if request.query_params.get("error") == "conflict":
-        error = "Контакт изменился на другом устройстве. Перезагрузите карточку и повторите правку."
+        error = _("Контакт изменился на другом устройстве. Перезагрузите карточку и повторите правку.")
     return _form(request, current, "edit", parsed, uid=uid, error=error)
 
 
