@@ -1,0 +1,17 @@
+# Права Radicale (многопользовательская схема из документации).
+# Первая подходящая секция выигрывает, поэтому у корня коллекция указана пустой:
+# иначе правило корня перекрывает правило адресных книг.
+[root]
+user: .+
+collection:
+permissions: R
+
+[principal]
+user: .+
+collection: {user}
+permissions: RW
+
+[addressbooks]
+user: .+
+collection: {user}/[^/]+
+permissions: rw

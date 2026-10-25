@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% from "_avatar.html" import avatar %}
+{% block title %}Контакты — Visitka{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Контакты</h1>
+  <div class="head-actions">
+    <details class="menu">
+      <summary class="icon-button" aria-label="Импорт и экспорт" title="Импорт и экспорт">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r=".6"/><circle cx="12" cy="12" r=".6"/><circle cx="18.5" cy="12" r=".6"/></svg>
+      </summary>
+      <div class="menu-panel">
+        <a class="menu-item" href="/import">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>Импорт из .vcf
+        </a>
+        <a class="menu-item" href="/export.vcf" download data-download="Готовлю файл со всеми контактами…">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14"/></svg>Экспорт всех в .vcf
+        </a>
+        {% if total %}
+        <a class="menu-item danger-text" href="/clear">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 12.5h8L17 7"/></svg>Очистить адресную книгу
+        </a>
+        {% endif %}
+      </div>
+    </details>
+    <a class="button round" href="/contacts/new" aria-label="Новый контакт" title="Новый контакт">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </a>
+  </div>
+</div>
+
+{% if ok == "password" %}<p class="flash ok">Пароль изменён. В других браузерах нужно будет войти заново.</p>{% endif %}
+{% if ok == "deleted" %}<p class="flash ok">Контакт удалён.</p>{% endif %}
+{% if ok == "cleared" %}<p class="flash ok">Адресная книга очищена{% if removed %}: удалено {{ removed }}{% endif %}.</p>{% endif %}
+
+<form method="get" action="/" class="search-form" role="search" data-live-search>
+  <div class="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+    <input type="search" name="q" value="{{ q }}" placeholder="Поиск: имя, телефон, e-mail" autocomplete="off" aria-label="Поиск">
+  </div>
+  {% if total %}
+  <div class="filters">
+    <div class="segmented" role="radiogroup" aria-label="Фото">
+      {% for value, label, n in [("", "Все", total), ("with", "С фото", with_photo), ("without", "Без фото", total - with_photo)] %}
+      <label><input type="radio" name="photo" value="{{ value }}" {% if photo == value %}checked{% endif %}>{{ label }}{% if n is not none %} <span class="n">{{ n }}</span>{% endif %}</label>
+      {% endfor %}
+    </div>
+    {% if orgs %}
+    <div class="select-chip{% if org %} is-set{% endif %}" data-org-picker>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="7.5" width="15" height="12" rx="2"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M4.5 12.5h15"/></svg>
+      <select name="org" aria-label="Организация">
+        <option value="">Все организации · {{ total }}</option>
+        {% for key, label, n in orgs %}<option value="{{ key }}" {% if org == key %}selected{% endif %}>{{ label }} · {{ n }}</option>{% endfor %}
+        <option value="{{ no_org }}" {% if org == no_org %}selected{% endif %}>Без организации · {{ without_org }}</option>
+      </select>
+    </div>
+    {% endif %}
+    <noscript><button type="submit" class="button small">Показать</button></noscript>
+  </div>
+  {% endif %}
+</form>
+<p class="hint count" data-count data-total="{{ total }}">
+  {% if filtering %}Найдено {{ matched|length }} из {{ total }}{% else %}{{ total }} {{ "контакт" if total % 10 == 1 and total % 100 != 11 else ("контакта" if total % 10 in [2,3,4] and total % 100 not in [12,13,14] else "контактов") }}{% endif %}
+</p>
+
+{% if contacts %}
+{% if groups|length > 1 %}
+<nav class="alphabet" aria-label="Буквы алфавита" data-alphabet>
+  {% for letter, group in groups %}<a href="#letter-{{ loop.index }}" data-letter="{{ letter }}"{% if filtering and not group|selectattr("href", "in", matched)|first %} hidden{% endif %}>{{ letter }}</a>{% endfor %}
+</nav>
+{% endif %}
+<div class="contact-groups" data-contacts>
+{% for letter, group in groups %}
+<section class="group" id="letter-{{ loop.index }}" data-group{% if filtering and not group|selectattr("href", "in", matched)|first %} hidden{% endif %}>
+  <h2 class="group-letter">{{ letter }}</h2>
+  <ul class="list">
+    {% for c in group %}
+    <li data-search="{{ c.search }}" data-digits="{{ c.digits }}" data-photo="{{ 1 if c.has_photo else 0 }}" data-org="{{ c.org_key }}"{% if filtering and c.href not in matched %} hidden{% endif %}>
+      <a class="row-link" href="/contacts/{{ c.uid|urlencode }}">
+        {{ avatar(c, c.uid) }}
+        <span class="who">
+          <strong>{{ c.fn or "Без имени" }}</strong>
+          {% if c.org or c.tel %}<em>{{ c.org or c.tel[0].value }}</em>{% endif %}
+        </span>
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+</div>
+<section class="card empty-state" data-no-results{% if not filtering or matched %} hidden{% endif %}>
+  <p>Ничего не нашлось.</p>
+</section>
+{% else %}
+<section class="card empty-state">
+  <p><strong>Пока пусто</strong></p>
+  <p class="hint">Создайте первый контакт или подключите телефон в разделе «Устройства».</p>
+  <p class="empty-actions"><a class="button" href="/contacts/new">Новый контакт</a> <a class="button ghost" href="/import">Импорт из .vcf</a></p>
+</section>
+{% endif %}
+{% endblock %}

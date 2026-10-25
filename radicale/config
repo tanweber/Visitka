@@ -1,0 +1,29 @@
+[server]
+hosts = 0.0.0.0:5232
+
+[auth]
+# пароль проверяет приложение; Radicale доверяет заголовку X-Remote-User от Caddy
+type = http_x_remote_user
+
+[rights]
+# многопользовательская схема: корень только на чтение (нужен DAVx5 для обнаружения),
+# своя папка — на запись, чужая — недоступна
+type = from_file
+file = /etc/radicale/rights
+
+[storage]
+filesystem_folder = /data/collections
+# служебный кэш — в tmpfs: на медленных дисках (например, md RAID1) каждый fsync стоит
+# ~100 мс и больше, и запись одного
+# контакта занимала ~1 с. Сами карточки по-прежнему пишутся на диск с fsync;
+# кэш после перезапуска пересобирается сам
+filesystem_cache_folder = /var/cache/radicale
+use_cache_subfolder_for_item = True
+use_cache_subfolder_for_history = True
+use_cache_subfolder_for_synctoken = True
+
+[web]
+type = none
+
+[logging]
+level = warning

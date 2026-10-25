@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Устройства — Visitka{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Устройства</h1></div>
+
+{% if new_secret %}
+<section class="card secret-card">
+  <p><strong>Пароль для «{{ new_name }}» создан</strong></p>
+  <p class="hint">Скопируйте его сейчас — второй раз он не покажется.</p>
+  <div class="secret-row">
+    <code class="secret" id="new-secret">{{ new_secret }}</code>
+    <button type="button" class="button ghost small" data-copy="#new-secret">Копировать</button>
+  </div>
+</section>
+{% endif %}
+
+<h2 class="section-title">Новый пароль устройства</h2>
+<form method="post" action="/devices" class="card inline-form">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input name="name" placeholder="Название, например Pixel 9" aria-label="Название устройства" required maxlength="64">
+  <button type="submit" class="button">Создать</button>
+</form>
+
+<h2 class="section-title">Мои устройства</h2>
+<ul class="list card-list">
+  {% for d in devices %}
+  <li>
+    <span class="device-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg></span>
+    <span class="who"><strong>{{ d.name }}</strong><em>создан {{ d.created_at|localtime("%d.%m.%Y") }}{% if d.last_used_at %} · синхронизация {{ d.last_used_at|localtime }}{% else %} · ещё не подключался{% endif %}</em></span>
+    <form method="post" action="/devices/{{ d.id }}/revoke" data-confirm="Отозвать пароль «{{ d.name }}»? Телефон перестанет синхронизироваться.">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button type="submit" class="text-button danger-text">Отозвать</button>
+    </form>
+  </li>
+  {% else %}
+  <li class="empty">Паролей устройств пока нет.</li>
+  {% endfor %}
+</ul>
+
+<h2 class="section-title">Как подключить DAVx5 на Android</h2>
+<section class="card">
+  <ol class="steps">
+    <li>Откройте DAVx5 → «+» → «Вход по URL и имени пользователя».</li>
+    <li>Базовый URL: <span class="copyable"><code id="server-url">{{ public_url }}</code><button type="button" class="copy-icon" data-copy="#server-url" aria-label="Скопировать адрес сервера" title="Скопировать адрес сервера">
+      <svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg>
+      <svg class="i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    </button></span></li>
+    <li>Имя пользователя: <span class="copyable"><code id="dav-username">{{ username }}</code><button type="button" class="copy-icon" data-copy="#dav-username" aria-label="Скопировать имя пользователя" title="Скопировать имя пользователя">
+      <svg class="i-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/></svg>
+      <svg class="i-done" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    </button></span>, пароль — пароль устройства (не пароль входа на сайт).</li>
+    <li>В аккаунте выберите адресную книгу «Контакты» и включите синхронизацию.</li>
+  </ol>
+</section>
+{% endblock %}

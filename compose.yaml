@@ -1,0 +1,112 @@
+name: visitka
+
+# общие настройки защиты: без повышения привилегий, без capabilities,
+# корневая ФС только на чтение, ротация логов
+x-hardening: &hardening
+  restart: unless-stopped
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp:size=16m
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  caddy:
+    <<: *hardening
+    image: caddy:2.11.7
+    # у бинарника caddy есть file-capability: без неё exec падает с EPERM
+    cap_add:
+      - NET_BIND_SERVICE
+    ports:
+      - "${CADDY_HTTP_PORT:-8080}:8080"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      # в образе Caddy нет базы часовых поясов — берём с хоста, иначе TZ не работает
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+    environment:
+      CADDY_HTTP_PORT: "8080"
+      TZ: ${TZ:-Europe/Moscow}
+    depends_on:
+      app:
+        condition: service_healthy
+      radicale:
+        condition: service_healthy
+    mem_limit: 128m
+    pids_limit: 100
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  radicale:
+    <<: *hardening
+    build: ./radicale
+    environment:
+      TZ: ${TZ:-Europe/Moscow}
+    volumes:
+      - radicale_data:/data
+    tmpfs:
+      - /tmp:size=16m
+      - /var/cache/radicale:size=64m,uid=10001,gid=10001,mode=0700
+    expose:
+      - "5232"
+    # один REPORT с карточками стоит Radicale 70–130 МБ; при 256 МБ два-три
+    # одновременных запроса (веб + синхронизация телефона) приводили к OOM-kill
+    mem_limit: 768m
+    pids_limit: 100
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:5232/', timeout=3)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+
+  app:
+    <<: *hardening
+    build: ./app
+    volumes:
+      - app_data:/data
+    # .env необязателен: без него — admin/admin и смена пароля при первом входе
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # часовой пояс для времени в интерфейсе и логах; в базе время хранится в UTC
+      TZ: ${TZ:-Europe/Moscow}
+      # X-Forwarded-* принимаем только от Caddy из внутренней сети
+      FORWARDED_ALLOW_IPS: ${CONTACTS_SUBNET:-10.77.0.0/24}
+    expose:
+      - "8000"
+    # argon2 берёт ~64 МБ на проверку, при параллельных входах нужен запас
+    mem_limit: 512m
+    pids_limit: 100
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+
+volumes:
+  caddy_data:
+  caddy_config:
+  radicale_data:
+  app_data:
+
+# Явная подсеть: стандартные пулы docker на этом хосте исчерпаны
+# (ошибка «all predefined address pools have been fully subnetted»).
+# На неё же завязан --forwarded-allow-ips в app/Dockerfile.
+networks:
+  default:
+    ipam:
+      config:
+        # своя подсеть, чтобы app доверял заголовкам только от Caddy; смените при пересечении
+        - subnet: ${CONTACTS_SUBNET:-10.77.0.0/24}

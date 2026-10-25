@@ -1,0 +1,62 @@
+{%- set theme = request.cookies.get("theme", "auto") -%}
+{%- if theme not in ["auto", "light", "dark", "nord", "forest"] %}{% set theme = "auto" %}{% endif -%}
+{%- set path = request.url.path -%}
+<!doctype html>
+<html lang="ru" data-theme="{{ theme }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Visitka{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css?v=17">
+  <script src="/static/app.js?v=14" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="brand" href="/">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4"/><path d="M4.5 20c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg>
+      <span>Visitka</span>
+    </a>
+    {% if user and not user.must_change_password %}
+    <nav class="tabs">
+      <a href="/" {% if path == "/" or path.startswith("/contacts") %}aria-current="page"{% endif %}>Список</a>
+      <a href="/devices" {% if path == "/devices" %}aria-current="page"{% endif %}>Устройства</a>
+      {% if user.is_admin %}<a href="/admin" {% if path == "/admin" %}aria-current="page"{% endif %}>Админка</a>{% endif %}
+    </nav>
+    {% endif %}
+    <div class="top-tools">
+      <details class="menu theme-menu">
+        <summary class="icon-button" aria-label="Тема оформления" title="Тема оформления">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" class="fill"/></svg>
+        </summary>
+        <div class="menu-panel">
+          <p class="menu-title">Тема</p>
+          {% for key, label in THEMES %}
+          <a class="theme-option" href="/theme/{{ key }}" data-theme-set="{{ key }}" {% if key == theme %}aria-current="true"{% endif %}>
+            <span class="swatch swatch-{{ key }}" aria-hidden="true"></span>{{ label }}
+            <svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+          </a>
+          {% endfor %}
+        </div>
+      </details>
+      {% if user %}
+      <details class="menu">
+        <summary class="icon-button user-chip" title="{{ user.username }}">{{ user.username[:1]|upper }}</summary>
+        <div class="menu-panel">
+          <p class="menu-title">{{ user.username }}</p>
+          <a class="menu-item" href="/account/password">Сменить пароль</a>
+          <form method="post" action="/logout">
+            <button type="submit" class="menu-item">Выйти</button>
+          </form>
+        </div>
+      </details>
+      {% endif %}
+    </div>
+  </div>
+</header>
+<main>
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

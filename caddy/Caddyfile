@@ -1,0 +1,51 @@
+# Caddy работает без TLS: наружу сервис публикует внешний прокси (NPM) с сертификатом.
+# Caddy отвечает за маршрутизацию, forward_auth и заголовок X-Remote-User.
+{
+	auto_https off
+	admin off
+}
+
+:{$CADDY_HTTP_PORT:8080} {
+	# клиент не может подставить свой X-Remote-User ни на одном маршруте
+	request_header -X-Remote-User
+
+	# защитные заголовки для веб-интерфейса; DAV-клиентам они не мешают
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+		Content-Security-Policy "default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'self' data: blob:; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
+		-Server
+	}
+
+	# эндпоинт forward_auth нужен только самому Caddy (он ходит на app:8000 напрямую)
+	handle /auth/* {
+		respond 404
+	}
+
+	# vCard с фото бывают крупными, но не больше 20 МБ
+	request_body {
+		max_size 20MB
+	}
+
+	redir /.well-known/carddav /carddav/ 301
+	redir /.well-known/caldav /carddav/ 301
+
+	handle /carddav/* {
+		uri strip_prefix /carddav
+		forward_auth app:8000 {
+			uri /auth/dav
+			method GET
+			copy_headers X-Remote-User
+		}
+		reverse_proxy radicale:5232 {
+			header_up X-Script-Name /carddav
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy app:8000
+	}
+}

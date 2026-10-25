@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_avatar.html" import avatar %}
+{% set title = "Новый контакт" if mode == "new" else "Правка контакта" %}
+{% block title %}{{ title }} — Visitka{% endblock %}
+{% block content %}
+{% set cancel = "/" if mode == "new" else "/contacts/" ~ (uid|urlencode) %}
+<form method="post" enctype="multipart/form-data" class="contact-form" data-busy="Сохраняю…"
+      action="{{ '/contacts/new' if mode == 'new' else '/contacts/' ~ (uid|urlencode) ~ '/edit' }}">
+  <div class="form-head">
+    <a class="text-button" href="{{ cancel }}">Отмена</a>
+    <h1 class="form-title">{{ title }}</h1>
+    <button type="submit" class="text-button strong">Готово</button>
+  </div>
+
+  {% if error %}<p class="flash error">{{ error }}</p>{% endif %}
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% if mode == "edit" %}<input type="hidden" name="etag" value="{{ contact.etag }}">{% endif %}
+
+  <div class="photo-picker">
+    <div class="photo-preview" data-photo-preview>
+      {{ avatar(contact, uid, "xl") }}
+    </div>
+    <label class="text-button">
+      {{ "Изменить фото" if contact.has_photo else "Добавить фото" }}
+      <input type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" class="visually-hidden" data-photo-input>
+    </label>
+    <input type="hidden" name="photo_crop" value="" data-photo-crop>
+    {% if contact.has_photo %}
+    <label class="check small"><input type="checkbox" name="photo_remove" value="1"> убрать фото</label>
+    {% endif %}
+  </div>
+
+  <div class="card inputs">
+    <input name="given" value="{{ contact.given or '' }}" placeholder="Имя" aria-label="Имя" autocomplete="off">
+    <input name="family" value="{{ contact.family or '' }}" placeholder="Фамилия" aria-label="Фамилия" autocomplete="off">
+    <input name="fn" value="{{ contact.fn or '' }}" placeholder="Имя для показа (если не «Имя Фамилия»)" aria-label="Имя для показа" autocomplete="off">
+  </div>
+
+  <div class="card inputs">
+    <input name="org" value="{{ contact.org or '' }}" placeholder="Организация" aria-label="Организация">
+    <input name="title" value="{{ contact.title or '' }}" placeholder="Должность" aria-label="Должность">
+  </div>
+
+  <div class="card inputs">
+    <label class="inline-label">телефоны<textarea name="tel" rows="2" placeholder="+7 900 000-00-00&#10;по одному в строке">{% for t in contact.tel or [] %}{{ t.value }}
+{% endfor %}</textarea></label>
+    <label class="inline-label">e-mail<textarea name="email" rows="2" placeholder="name@example.ru&#10;по одному в строке">{% for e in contact.email or [] %}{{ e.value }}
+{% endfor %}</textarea></label>
+  </div>
+
+  <div class="card inputs">
+    <label class="inline-label">день рождения<input name="bday" value="{{ contact.bday or '' }}" placeholder="01.07.1975 или 01.07" autocomplete="off"></label>
+    <label class="inline-label">сайт<input name="url" value="{{ contact.url or '' }}" placeholder="https://"></label>
+  </div>
+
+  <div class="card inputs">
+    <textarea name="note" rows="3" placeholder="Заметка" aria-label="Заметка">{{ contact.note or '' }}</textarea>
+  </div>
+
+  <div class="form-foot">
+    <a class="button ghost" href="{{ cancel }}">Отмена</a>
+    <button type="submit" class="button">Сохранить</button>
+  </div>
+</form>
+{% endblock %}

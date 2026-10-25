@@ -1,0 +1,8 @@
+{#- аватар: фото по ссылке с etag (для кэша) или инициалы; size — класс размера -#}
+{%- macro avatar(c, uid, size="") -%}
+{%- if c.has_photo -%}
+<img class="avatar {{ size }}" src="/contacts/{{ uid|urlencode }}/photo?v={{ c.etag|urlencode }}" alt="" loading="lazy" decoding="async">
+{%- else -%}
+<span class="avatar {{ size }} tone-{{ c.tone }}" aria-hidden="true">{{ c.initials }}</span>
+{%- endif -%}
+{%- endmacro -%}
